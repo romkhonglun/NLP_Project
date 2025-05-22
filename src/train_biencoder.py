@@ -134,7 +134,7 @@ def main(
     name = f"fold_{fold}"
     output_dir = str(Path(cfg.save_dir) / params.output_dir / name)
     best_model_path = str(Path(cfg.best_model_dir) / params.output_dir / name)
-    wandb.login(key="ccd07261eef86e04beb9d6f9e459d8995bdc4b16")
+    wandb.login(key="")
     wandb.init(project="eedi-biencoder", name=f"{name}_{params.model_name.split('/')[-1]}")
 
     # Initialize model
