@@ -1,3 +1,4 @@
+%%writefile / kaggle / working / train_listwise.py
 import math
 import os
 
@@ -16,6 +17,10 @@ import wandb
 from datasets import Dataset
 from omegaconf import OmegaConf
 from tqdm import tqdm
+from unsloth import FastLanguageModel
+from unsloth.chat_templates import train_on_responses_only
+from unsloth.kernels.cross_entropy_loss import Fast_CrossEntropyLoss
+
 from transformers import (
     DataCollatorForSeq2Seq,
     PreTrainedTokenizer,
@@ -23,10 +28,10 @@ from transformers import (
     set_seed,
 )
 from trl import SFTTrainer
-from unsloth import FastLanguageModel
-from unsloth.chat_templates import train_on_responses_only
 
 from utils import mean_average_precision_at_k, mean_recall_at_k
+
+os.environ["UNSLOTH_RETURN_LOGITS"] = "1"
 
 PROMPT_FORMAT: str = """<|im_start|>system
 You will be given math problem, overview of ther problem, correct answer, incorrect answer, and incorrect reason.
@@ -69,7 +74,7 @@ def get_choice_words(num_choices: int, special_choice: str = "NA") -> List[str]:
 
 
 def tokenize_function(
-    row: Dict[str, Any], tokenizer: PreTrainedTokenizer, max_length: int
+        row: Dict[str, Any], tokenizer: PreTrainedTokenizer, max_length: int
 ) -> Dict[str, torch.Tensor]:
     """
     Tokenize a single row of text data.
@@ -93,10 +98,10 @@ def tokenize_function(
 
 
 def process_data(
-    df: pd.DataFrame,
-    tokenizer: PreTrainedTokenizer,
-    target_cols: List[str] = ["prompt"],
-    max_length: int = 1536,
+        df: pd.DataFrame,
+        tokenizer: PreTrainedTokenizer,
+        target_cols: List[str] = ["prompt"],
+        max_length: int = 1536,
 ) -> Dataset:
     """
     Process and tokenize the dataset.
@@ -119,7 +124,7 @@ def process_data(
 
 
 def compute_metrics(
-    eval_pred: Tuple[Tuple[np.ndarray, np.ndarray], Any], params: Any
+        eval_pred: Tuple[Tuple[np.ndarray, np.ndarray], Any], params: Any
 ) -> Dict[str, float]:
     """
     Compute evaluation metrics for the model predictions.
@@ -142,7 +147,7 @@ def compute_metrics(
 
 
 def preprocess_logits_for_metrics(
-    logits: torch.Tensor, labels: torch.Tensor, params: Any
+        logits: torch.Tensor, labels: torch.Tensor, params: Any
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Preprocess model logits and labels for metric computation.
@@ -161,7 +166,7 @@ def preprocess_logits_for_metrics(
 
 
 def add_prompt(
-    df: pd.DataFrame, mapping: pd.DataFrame, params: Any, is_train: bool = True
+        df: pd.DataFrame, mapping: pd.DataFrame, params: Any, is_train: bool = True
 ) -> pd.DataFrame:
     """
     Create dataset with misconception choices and labels.
@@ -241,8 +246,8 @@ def add_prompt(
 
 
 def main(
-    fold: int = typer.Option(..., help="Fold number for cross-validation"),
-    config: str = typer.Option("./config/exp_gpu.yaml", help="Path to configuration file"),
+        fold: int = typer.Option(..., help="Fold number for cross-validation"),
+        config: str = typer.Option("/kaggle/working/exp_gpu.yaml", help="Path to configuration file"),
 ) -> None:
     """
     Main training function.
@@ -258,7 +263,7 @@ def main(
 
     # Load data
     mapping = pd.read_csv(Path(cfg.input_dir) / "misconception_mapping.csv")
-    df = pd.read_csv(Path(cfg.save_dir) / params.input_name)
+    df = pd.read_csv("/kaggle/input/dataeedi/exp_output/data_bi.csv")
 
     # Split data into train and validation
     train_df = df.loc[df.fold != fold].copy()
@@ -268,12 +273,11 @@ def main(
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name=params.model_name,
         max_seq_length=params.max_length,
-        dtype=torch.bfloat16,
+        dtype=torch.float16,
         load_in_4bit=params.load_in_4bit,
         device_map="auto",
     )
     tokenizer.truncation_side = "left"
-
     # Setup choice words and tokens
     params.choice_words = get_choice_words(params.num_choice)
     params.choice_tokens = [tokenizer.encode(x)[0] for x in params.choice_words]
@@ -283,7 +287,6 @@ def main(
     val_df = add_prompt(val_df, mapping, params, is_train=False)
     train_dset = process_data(train_df, tokenizer, max_length=params.max_length)
     val_dset = process_data(val_df, tokenizer, max_length=params.max_length)
-
     # Plot token length distribution
     token_lengths = [len(x) for x in train_dset["input_ids"]]
     plt.figure(figsize=(10, 6))
@@ -311,21 +314,20 @@ def main(
         bias="none",
         random_state=3407,
     )
-
     # Initialize wandb and setup paths
     run_name = f"fold_{fold}"
+    wandb.login(key="ccd07261eef86e04beb9d6f9e459d8995bdc4b16")
     wandb.init(project="eedi-reranker", name=f"{run_name}_{params.model_name.split('/')[-1]}")
-
     output_dir = str(Path(cfg.save_dir) / params.output_dir / run_name)
     best_model_path = str(Path(cfg.best_model_dir) / params.output_dir / run_name)
 
     # Calculate evaluation steps (4 times per epoch)
     steps_per_epoch = len(train_dset) // (
-        params.train_args.per_device_train_batch_size
-        * params.train_args.gradient_accumulation_steps
-        * 4
+            params.train_args.per_device_train_batch_size
+            * params.train_args.gradient_accumulation_steps
+            * 4
     )
-
+    # Create loss function for multi-gpu training
     def my_cross_entropy_loss(model_output, labels, logit_softcapping=0, logit_scaling=0, n_items=None, *args,
                               **kwargs):
         # move to same device
@@ -345,19 +347,22 @@ def main(
             n_items = n_items.to(loss.device)
 
         return loss.sum() / n_items
+
+    data_collator = DataCollatorForSeq2Seq(
+        tokenizer=tokenizer, padding="longest", max_length=params.max_length
+    )
     # Initialize trainer
     trainer = SFTTrainer(
         model=model,
         train_dataset=train_dset,
         eval_dataset=val_dset,
         dataset_text_field="prompt",
-        compute_loss_func=my_cross_entropy_loss,
-        data_collator=DataCollatorForSeq2Seq(
-            tokenizer=tokenizer, padding="longest", max_length=params.max_length
-        ),
+        processing_class=tokenizer,
+        data_collator=data_collator,
         dataset_num_proc=4,
         packing=False,
         compute_metrics=partial(compute_metrics, params=params),
+        compute_loss_func=my_cross_entropy_loss,
         preprocess_logits_for_metrics=partial(preprocess_logits_for_metrics, params=params),
         args=TrainingArguments(
             **params.train_args,
@@ -377,6 +382,7 @@ def main(
     # Train and save model
     trainer.train()
     trainer.save_model(best_model_path)
+
 
 if __name__ == "__main__":
     typer.run(main)
