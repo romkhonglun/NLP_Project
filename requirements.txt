@@ -1,0 +1,16 @@
+numpy==1.24.3
+pandas==1.5.3
+scikit-learn==1.2.2
+transformers==4.33.2
+omegaconf==2.3.0
+typer==0.9.0
+vllm
+torch
+dotenv
+openai
+sentence_transformers
+tqdm
+peft
+datasets
+trl
+unsloth
