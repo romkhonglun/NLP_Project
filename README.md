@@ -11,7 +11,7 @@ This project implements a reranking model for misconceptions in educational data
 
 ## Installation
 
-   ```bash
+```bash
    git clone <repository-url>
    cd <repository-directory>
    python src/generate_data.py
@@ -34,7 +34,7 @@ This project implements a reranking model for misconceptions in educational data
     
     # training reranking model
     python src/train_reranking.py --fold 4
-    ```
+```
 
   
 ## Authors
