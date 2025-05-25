@@ -1,0 +1,34 @@
+input_dir: "input"
+save_dir: "output"
+best_model_dir: "best_models"
+train_listwise:
+  model_name: "unsloth/Qwen2.5-32B-Instruct"
+  input_name: "data_bi.csv"
+  output_dir: "output_listwise"
+  add_na: true # add NA to the options
+  num_choice: 52
+  num_slide: 52
+  train_negative_topk: 208 # this is only used when add_na is true
+  train_topk: 208
+  inference_topk: 52
+  max_length: 1900
+  seed: 42
+  load_in_4bit: false
+  lora_config:
+    r: 24
+    lora_alpha: 48
+  train_args:
+    per_device_train_batch_size: 4
+    per_device_eval_batch_size: 1
+    gradient_accumulation_steps: 2
+    num_train_epochs: 1.0
+    learning_rate: 5e-5
+    warmup_steps: 10
+    logging_steps: 10
+    overwrite_output_dir: true
+    save_total_limit: 2
+    lr_scheduler_type: "cosine"
+    report_to: "wandb"
+    bf16: true
+    eval_strategy: "steps"
+    metric_for_best_model: "loss"

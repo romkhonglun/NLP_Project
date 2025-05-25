@@ -1,0 +1,13 @@
+input_dir: "input"
+save_dir: "output"
+best_model_dir: "best_models"
+
+# inference_biencoder.py
+inference_biencoder:
+  model_output_dir: "output_bi_1.5B"
+  input_name: "data_kd.csv"
+  save_name: "data_bi.csv"
+  model_name: "dunzhang/stella_en_1.5B_v5"
+  is_lora: true
+  load_in_4bit: false
+  batch_size: 32

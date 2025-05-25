@@ -1,0 +1,15 @@
+input_dir: "input"
+save_dir: "output"
+best_model_dir: "best_models"
+inference_listwise:
+  model_output_dir: "output_listwise"
+  input_name: "data_bi.csv"
+  save_name: "data_listwise.csv"
+  batch_size: 2
+  seed: 42
+  topk: 104
+  num_choice: 52
+  num_slide: 52
+  add_na: True
+  max_length: 2048
+  load_in_4bit: false

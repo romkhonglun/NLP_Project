@@ -1,0 +1,9 @@
+input_dir: "input"
+save_dir: "output"
+best_model_dir: "best_models"
+
+# distill.py
+distill:
+  model_name: "Qwen/Qwen2.5-32B-Instruct-AWQ"
+  input_name: "data.csv"
+  save_name: "data_kd.csv"

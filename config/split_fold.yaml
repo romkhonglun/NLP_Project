@@ -1,0 +1,9 @@
+input_dir: "input"
+save_dir: "output"
+best_model_dir: "best_models"
+
+split_fold:
+  n_split: 5
+  add_data_name: "systhetic_data.csv"
+  seed: 42
+  save_name: "data.csv"

@@ -1,0 +1,11 @@
+input_dir: "input"
+save_dir: "output"
+best_model_dir: "best_models"
+
+# generate_question.py
+generate_question:
+  model_name: "openai/gpt-4o-mini"
+  save_name: "additonal_question.csv"
+  embedding_model: "dunzhang/stella_en_1.5B_v5"
+  num_shot: 4
+  sem_number: 100 # number of conccurent
