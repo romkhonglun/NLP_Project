@@ -141,7 +141,7 @@ def main(
     model = SentenceTransformer(
         params.model_name,
         trust_remote_code=True,
-        model_kwargs={"load_in_4bit": params.load_in_4bit, "torch_dtype": torch.bfloat16},
+        model_kwargs={"torch_dtype": torch.bfloat16},
     )
     # Perform hard negative mining
     train_dset = mine_hard_negatives(
