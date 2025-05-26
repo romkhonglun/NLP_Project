@@ -4,6 +4,7 @@
 This project implements a reranking model for misconceptions in educational data using a listwise approach. The model is trained and evaluated on a dataset of misconceptions, leveraging a pre-trained language model with fine-tuning. 
 ```
 [infer notebook](https://www.kaggle.com/code/nguynhucng/infer)
+[synthetic data](https://drive.google.com/file/d/16wG5juwH0hhV7XUpAnHrzoybXTdl6lSE/view?usp=sharing)
 ## Requirements
 
 - Python 3.8+
